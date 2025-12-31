@@ -2,35 +2,34 @@
 
 ![Diagram](./image.png)
 
-To met my friend needs I used:
 
+### Technical Overview
+To meet the project requirements, I implemented the following architecture:
+* **API Gateway:** Configured with a POST method to handle incoming requests. ✅
+* **Lambda Function:** Processes incoming order data in JSON format. ✅
+* **DynamoDB:** Used to store **INVALID** orders. These entries are retained for manual review; in the event of a malicious attack, this data is preserved for reporting to the authorities. ✅
+* **SNS Topic:** Configured to send email notifications exclusively for **VALID** orders. ✅
 
-- API Gateway with POST Method ✅
-- Lambda Function witch receives data (orders info) as JSON. ✅
-- DynamoDB to store INVALID orders. They need to be checked and if there is malicious attack by hackers, it has to be reported to the authorities. ✅
-- SNS Topic to send notifications via e-mail only for VALID orders. ✅
+### Data Retention & Automation
+There was a proposal to add automated deletion for items in DynamoDB. However, I recommend a manual review process for all **INVALID** orders. If a hacking attempt occurs, data must be stored for a longer period to allow authorities sufficient time for investigation. 
 
-My friend asked me to add automated deletion for the items in DynamoDB. I personally don't recommend that.
-In my opinion every INVALID order must be checked manually. If there is a hacking attempt, this data must be stored for a longer period,
-because the authorities usually need more time tо check everything. I know it sounds hard thing to do if the amount of requests is above million,
-but my friend want to have the valid orders via mail anyway, so maybe my friend have workers. 
-(I hope Sisi will not make me check them myself. :sweat_smile: ) 
-However, this task can be achieved in various ways. One of them is with second Lambda function with event bridge.
-The Lambda can be setup to check the datetime of the invalid order and if the limit is passed (for example 30 minutes) it can delete
-the order and then send a notification. The Event Bridge can have a rule to run the lambda every 30-60 minutes.
-Of course this is going to cost more. If the lambda function is triggered once every 30 minutes and uses SCAN to check the items,
-then the price for DynamoDB will be around $360 (per month) for a million items.
+While manual review can be challenging at scale (e.g., over a million requests), the current workflow directs valid orders via email for processing by the team. 
 
-To TEST this project before deployment simply use **npm test**
+#### Implementation Options for Automated Deletion:
+If automation is required, it can be achieved using a second Lambda function triggered by **EventBridge**. 
+* **Logic:** The Lambda checks the timestamp of invalid orders and deletes them if a specific limit (e.g., 30 minutes) is exceeded.
+* **Scheduling:** EventBridge can be configured to trigger this Lambda every 30–60 minutes.
+* **Cost Impact:** This approach increases operational costs. If the Lambda runs every 30 minutes and uses a `SCAN` operation to check items, the DynamoDB cost would be approximately **$360/month** for a million items.
 
-To USE this project you need POSTMAN. After creating an account you can send POST requests in JSON format.
+### Testing & Usage
+* **Testing:** To test the project before deployment, simply run: `npm test`
+* **Usage:** Use **Postman** to send POST requests in JSON format after setting up your account.
 
-💰 **PRICING:**
-API Gateway - 3,000,000 JSON objects * $3.70 (for eu-central-1) ~ $11.10 per month
-LAMBDA ~ $1.00 per month
-DynamoDB and SNS Topic notification ~ $2.50 per month
-
-The average price without anything extra is around $14 a month.
+### 💰 Pricing Estimates (Region: eu-central-1)
+* **API Gateway:** ~ $11.10 per month (3,000,000 JSON objects * $3.70)
+* **AWS Lambda:** ~ $1.00 per month
+* **DynamoDB & SNS:** ~ $2.50 per month
+* **Total Average Cost:** **~$14.60 per month** (excluding optional automated cleanup)
 
 Example of VALID order:
 
